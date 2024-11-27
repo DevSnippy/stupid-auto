@@ -1,9 +1,13 @@
-import tkinter as tk
+import customtkinter as ctk
 from tkinter import filedialog, messagebox
 import pyautogui
 import threading
 import re
 import time
+
+# Set the appearance and theme
+ctk.set_appearance_mode("System")  # Modes: "System" (default), "Dark", "Light"
+ctk.set_default_color_theme("blue")  # Themes: "blue" (default), "green", "dark-blue"
 
 class TableParser:
     def __init__(self, filepath):
@@ -50,9 +54,10 @@ class AutoGUIApp:
     def __init__(self, root):
         self.root = root
         self.root.title("stupidTabSender")
+        self.root.geometry("400x400")
         self.filepath = ""
         self.parser = None
-        self.selected_stage = tk.StringVar()
+        self.selected_stage = ctk.StringVar(value="A")
         self.sending = False
         self.stop_event = threading.Event()
         self.countdown_seconds = 10  # Countdown duration in seconds
@@ -60,34 +65,38 @@ class AutoGUIApp:
         self.create_widgets()
 
     def create_widgets(self):
-        # File selection
-        self.select_btn = tk.Button(self.root, text="Select TXT File", command=self.select_file)
-        self.select_btn.pack(pady=10)
+        # File selection button
+        self.select_btn = ctk.CTkButton(self.root, text="Select TXT File", command=self.select_file)
+        self.select_btn.pack(pady=10, padx=20, fill="x")
 
         # Label to show selected file
-        self.file_label = tk.Label(self.root, text="No file selected")
-        self.file_label.pack()
+        self.file_label = ctk.CTkLabel(self.root, text="No file selected")
+        self.file_label.pack(pady=5, padx=20)
 
         # Dropdown for stage selection
-        self.stage_dropdown = tk.OptionMenu(self.root, self.selected_stage, "A", "N")
-        self.stage_dropdown.config(state='disabled')
-        self.stage_dropdown.pack(pady=10)
+        self.stage_dropdown = ctk.CTkOptionMenu(
+            self.root,
+            variable=self.selected_stage,
+            values=["A", "N"],
+            state="disabled"
+        )
+        self.stage_dropdown.pack(pady=10, padx=20, fill="x")
 
-        # Button to start sending
-        self.start_btn = tk.Button(self.root, text="Start Sending", command=self.start_sending, state='disabled')
-        self.start_btn.pack(pady=10)
+        # Start Sending button
+        self.start_btn = ctk.CTkButton(self.root, text="Start Sending", command=self.start_sending, state='disabled')
+        self.start_btn.pack(pady=10, padx=20, fill="x")
 
-        # Button to stop sending
-        self.stop_btn = tk.Button(self.root, text="Stop", command=self.stop_sending, state='disabled')
-        self.stop_btn.pack(pady=10)
+        # Stop button
+        self.stop_btn = ctk.CTkButton(self.root, text="Stop", command=self.stop_sending, state='disabled')
+        self.stop_btn.pack(pady=10, padx=20, fill="x")
 
         # Label to show messages
-        self.message_label = tk.Label(self.root, text="", fg="blue")
-        self.message_label.pack(pady=10)
+        self.message_label = ctk.CTkLabel(self.root, text="", fg_color=None, text_color="blue")
+        self.message_label.pack(pady=10, padx=20)
 
         # Label to show countdown
-        self.countdown_label = tk.Label(self.root, text="", fg="red", font=("Helvetica", 16))
-        self.countdown_label.pack(pady=5)
+        self.countdown_label = ctk.CTkLabel(self.root, text="", fg_color=None, text_color="red", font=("Helvetica", 16))
+        self.countdown_label.pack(pady=5, padx=20)
 
     def select_file(self):
         filepath = filedialog.askopenfilename(
@@ -106,29 +115,30 @@ class AutoGUIApp:
 
         if a_exists and n_exists:
             self.message_label.config(text="Both Stage A and Stage N tables found.")
-            self.stage_dropdown.config(state='normal')
+            self.stage_dropdown.configure(state='normal')
             self.selected_stage.set("A")  # Default selection
-            self.start_btn.config(state='normal')
+            self.start_btn.configure(state='normal')
         elif a_exists:
             self.message_label.config(text="Only Stage A table found.")
-            self.stage_dropdown.config(state='disabled')
-            self.start_btn.config(state='normal')
+            self.stage_dropdown.configure(state='disabled')
+            self.start_btn.configure(state='normal')
             self.selected_stage.set("A")
         elif n_exists:
             self.message_label.config(text="Only Stage N table found.")
-            self.stage_dropdown.config(state='disabled')
-            self.start_btn.config(state='normal')
+            self.stage_dropdown.configure(state='disabled')
+            self.start_btn.configure(state='normal')
             self.selected_stage.set("N")
         else:
             messagebox.showerror("Error", "No Stage A or Stage N tables found in the file.")
-            self.stage_dropdown.config(state='disabled')
-            self.start_btn.config(state='disabled')
+            self.stage_dropdown.configure(state='disabled')
+            self.start_btn.configure(state='disabled')
 
         # Show array sizes
         size_a = len(self.parser.stage_a)
         size_n = len(self.parser.stage_n)
         size_msg = f"Size - Stage A: {size_a} | Stage N: {size_n}"
-        self.message_label.config(text=self.message_label.cget("text") + f"\n{size_msg}")
+        current_text = self.message_label.cget("text")
+        self.message_label.config(text=f"{current_text}\n{size_msg}")
 
     def start_sending(self):
         if self.sending:
@@ -150,10 +160,11 @@ class AutoGUIApp:
 
         self.sending = True
         self.stop_event.clear()
-        self.start_btn.config(state='disabled')
-        self.stop_btn.config(state='normal')
-        self.select_btn.config(state='disabled')
-        self.stage_dropdown.config(state='disabled')
+        self.start_btn.configure(state='disabled')
+        self.stop_btn.configure(state='normal')
+        self.select_btn.configure(state='disabled')
+        if self.stage_dropdown.cget("state") != "disabled":
+            self.stage_dropdown.configure(state='disabled')
         self.message_label.config(text="Starting in 10 seconds...")
         self.countdown_label.config(text=str(self.countdown_seconds))
 
@@ -194,29 +205,29 @@ class AutoGUIApp:
         if self.sending:
             self.stop_event.set()
             self.update_message("Stopping...")
-            self.stop_btn.config(state='disabled')
+            self.stop_btn.configure(state='disabled')
 
     def reset_ui(self):
         self.sending = False
-        self.start_btn.config(state='normal')
-        self.stop_btn.config(state='disabled')
-        self.select_btn.config(state='normal')
+        self.start_btn.configure(state='normal')
+        self.stop_btn.configure(state='disabled')
+        self.select_btn.configure(state='normal')
         if len(self.parser.stage_a) > 0 and len(self.parser.stage_n) > 0:
-            self.stage_dropdown.config(state='normal')
+            self.stage_dropdown.configure(state='normal')
         elif len(self.parser.stage_a) > 0 or len(self.parser.stage_n) > 0:
-            self.stage_dropdown.config(state='disabled')
-        self.countdown_label.config(text="")
+            self.stage_dropdown.configure(state='disabled')
+        self.countdown_label.configure(text="")
 
     def update_message(self, message):
         # Update the message_label in the main thread
-        self.message_label.config(text=message)
+        self.message_label.configure(text=message)
 
     def update_countdown(self, countdown_text):
         # Update the countdown_label in the main thread
-        self.countdown_label.config(text=countdown_text)
+        self.countdown_label.configure(text=countdown_text)
 
 def main():
-    root = tk.Tk()
+    root = ctk.CTk()
     app = AutoGUIApp(root)
     root.mainloop()
 
